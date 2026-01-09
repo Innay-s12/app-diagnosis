@@ -31,6 +31,20 @@ app.get('/test-db', (req, res) => {
     });
 });
 
+app.post('/admin/login', (req, res) => {
+    const { name, sandi } = req.body;
+
+    if (name === 'admin' && sandi === '123456') {
+        return res.json({
+            success: true,
+            admin: { id: 1, name: 'admin' }
+        });
+    }
+
+    res.status(401).json({ error: 'Login gagal' });
+});
+
+
 /* ================= USERS ================= */
 app.post('/users', (req, res) => {
     const { nama_lengkap, usia, jenis_kelamin } = req.body;
@@ -100,3 +114,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
+
