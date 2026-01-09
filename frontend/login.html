@@ -338,10 +338,6 @@
     setLoadingState(true);
     
     try {
-        // Test koneksi dulu
-        console.log('🔍 Testing backend connection...');
-        const testResponse = await fetch('http://localhost:8000/');
-        console.log('🌐 Backend status:', testResponse.status);
         
         // Lakukan login
         const result = await authenticateUser(nama, sandi);
@@ -400,23 +396,40 @@
 
     async function authenticateUser(nama, sandi) {
     try {
-        const backendUrl = 'http://localhost:8000';
-        const endpoint = '/admin/login'; // <- INI YANG DIPERBAIKI
-        
-        console.log(`🔐 Mengirim POST ke: ${backendUrl}${endpoint}`);
-        console.log(`📤 Data: ${JSON.stringify({ name: nama, sandi: sandi })}`); // Perhatikan field name
-        
-        const response = await fetch(`${backendUrl}${endpoint}`, {
+        const response = await fetch('/admin/login', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                name: nama,    // Sesuai dengan backend: 'name'
-                sandi: sandi   // Sesuai dengan backend: 'sandi'
+                name: nama,
+                sandi: sandi
             })
         });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            return {
+                success: false,
+                message: result.error || 'Login gagal'
+            };
+        }
+
+        return {
+            success: true,
+            user: result.admin,
+            token: result.token || 'session-' + Date.now()
+        };
+
+    } catch (err) {
+        return {
+            success: false,
+            message: 'Tidak dapat terhubung ke server'
+        };
+    }
+}
+
         
         console.log('📥 Response status:', response.status);
         
@@ -587,4 +600,5 @@
     });
     </script>
 </body>
+
 </html>
