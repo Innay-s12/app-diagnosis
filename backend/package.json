@@ -1,5 +1,5 @@
 {
-  "name": "diagnosis-app",
+  "name": "diagnosis-backend",
   "version": "1.0.0",
   "main": "server.js",
   "scripts": {
@@ -8,6 +8,6 @@
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "mysql2": "^3.6.0"
+    "mysql2": "^3.9.0"
   }
 }
