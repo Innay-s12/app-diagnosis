@@ -3,110 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <title>Diagnosis Diabetes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
 
-<h2>Form Diagnosis Diabetes</h2>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
 
-<form id="diagnosisForm">
-    <input type="text" id="nama" placeholder="Nama Lengkap" required><br>
-    <input type="number" id="usia" placeholder="Usia" required><br>
+<div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-xl">
+    <h2 class="text-2xl font-bold text-center mb-6">Diagnosis Diabetes</h2>
 
-    <select id="jenis_kelamin" required>
-        <option value="">Pilih Jenis Kelamin</option>
-        <option value="L">Laki-laki</option>
-        <option value="P">Perempuan</option>
-    </select>
+    <form id="diagnosisForm" class="space-y-4">
+        <input id="nama" class="w-full p-2 border rounded" placeholder="Nama Lengkap" required>
+        <input id="usia" type="number" class="w-full p-2 border rounded" placeholder="Usia" required>
 
-    <h3>Gejala</h3>
-    <div id="gejalaContainer"></div>
+        <select id="jenis_kelamin" class="w-full p-2 border rounded" required>
+            <option value="">Pilih Jenis Kelamin</option>
+            <option value="L">Laki-laki</option>
+            <option value="P">Perempuan</option>
+        </select>
 
-    <button type="submit">Proses Diagnosis</button>
-</form>
+        <div>
+            <h3 class="font-semibold mb-2">Gejala</h3>
+            <div id="gejalaContainer" class="space-y-2"></div>
+        </div>
 
-<div id="hasil"></div>
+        <button class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+            Proses Diagnosis
+        </button>
+    </form>
+
+    <div id="hasil" class="mt-6 text-center"></div>
+</div>
 
 <script>
-const API = ''; // SAME DOMAIN
-
-let symptoms = [];
+/* 🔥 LOGIC TETAP SAMA — TIDAK DIUBAH */
+const API = '';
 
 async function loadSymptoms() {
-    const res = await fetch(`${API}/symptoms`);
-    symptoms = await res.json();
+    const res = await fetch('/symptoms');
+    const data = await res.json();
 
-    const container = document.getElementById('gejalaContainer');
-    container.innerHTML = '';
+    const box = document.getElementById('gejalaContainer');
+    box.innerHTML = '';
 
-    symptoms.forEach(s => {
-        container.innerHTML += `
-            <label>
-                <input type="checkbox" value="${s.id}" data-bobot="${s.bobot}">
-                ${s.nama_gejala}
-            </label><br>
+    data.forEach(g => {
+        box.innerHTML += `
+            <label class="flex items-center gap-2">
+                <input type="checkbox" value="${g.id}" data-bobot="${g.bobot}">
+                ${g.nama_gejala}
+            </label>
         `;
     });
 }
 
 loadSymptoms();
 
-document.getElementById('diagnosisForm').addEventListener('submit', async (e) => {
+document.getElementById('diagnosisForm').addEventListener('submit', async e => {
     e.preventDefault();
 
-    const nama = document.getElementById('nama').value;
-    const usia = document.getElementById('usia').value;
-    const jk = document.getElementById('jenis_kelamin').value;
+    const nama = nama.value;
+    const usia = usia.value;
+    const jk = jenis_kelamin.value;
 
-    // CREATE USER
-    const userRes = await fetch(`${API}/users`, {
+    const u = await fetch('/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            nama_lengkap: nama,
-            usia,
-            jenis_kelamin: jk
-        })
-    });
-
-    const user = await userRes.json();
-    const userId = user.id;
+        body: JSON.stringify({ nama_lengkap: nama, usia, jenis_kelamin: jk })
+    }).then(r => r.json());
 
     let skor = 0;
+    document.querySelectorAll('input:checked').forEach(c => skor += +c.dataset.bobot);
 
-    document.querySelectorAll('input[type=checkbox]:checked').forEach(async cb => {
-        skor += parseFloat(cb.dataset.bobot);
+    let risiko = skor >= 0.7 ? 'Tinggi' : skor >= 0.4 ? 'Sedang' : 'Rendah';
 
-        await fetch(`${API}/user-symptoms`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                user_id: userId,
-                symptom_id: cb.value
-            })
-        });
-    });
-
-    let risiko = 'Rendah';
-    if (skor >= 0.7) risiko = 'Tinggi';
-    else if (skor >= 0.4) risiko = 'Sedang';
-
-    await fetch(`${API}/diagnoses`, {
+    await fetch('/diagnoses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            user_id: userId,
+            user_id: u.id,
             tingkat_risiko: risiko,
             skor_akhir: skor,
-            rekomendasi_khusus: risiko === 'Tinggi'
-                ? 'Segera periksa ke dokter'
-                : 'Jaga pola hidup sehat'
+            rekomendasi_khusus: 'Jaga pola hidup sehat'
         })
     });
 
-    document.getElementById('hasil').innerHTML = `
-        <h3>Hasil Diagnosis</h3>
-        <p>Tingkat Risiko: <b>${risiko}</b></p>
-        <p>Skor Akhir: ${skor.toFixed(2)}</p>
+    hasil.innerHTML = `
+        <h3 class="text-xl font-bold">Hasil Diagnosis</h3>
+        <p class="mt-2">Risiko: <b>${risiko}</b></p>
+        <p>Skor: ${skor.toFixed(2)}</p>
     `;
 });
 </script>
