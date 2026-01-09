@@ -19,6 +19,17 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+app.get('/test-db', (req, res) => {
+    db.query('SELECT 1 + 1 AS result', (err, rows) => {
+        if (err) {
+            console.error(err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true, result: rows[0].result });
+    });
+});
+
+
 // ==================== DEFAULT PAGE ====================
 app.get('/', (req, res) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
