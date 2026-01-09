@@ -22,8 +22,12 @@ app.get('/health', (req, res) => {
 app.get('/test-db', (req, res) => {
     db.query('SELECT 1 + 1 AS result', (err, rows) => {
         if (err) {
-            console.error(err);
-            return res.status(500).json({ error: err.message });
+            console.error('DB ERROR:', err);
+            return res.status(500).json({
+                message: 'DB ERROR',
+                error: err.message,
+                code: err.code
+            });
         }
         res.json({ success: true, result: rows[0].result });
     });
