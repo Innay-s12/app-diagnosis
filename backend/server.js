@@ -1,7 +1,6 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
-
 const db = require('./db');
 
 const app = express();
@@ -13,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ==================== STATIC FRONTEND ====================
-const frontendPath = path.join(__dirname, 'frontend');
+const frontendPath = path.join(__dirname, '..', 'frontend');
 app.use(express.static(frontendPath));
 
 // ==================== HEALTHCHECK ====================
@@ -21,20 +20,16 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// ==================== TEST DB ====================
 app.get('/test-db', (req, res) => {
     db.query('SELECT 1 + 1 AS result', (err, rows) => {
         if (err) {
             console.error('DB ERROR:', err);
-            return res.status(500).json({
-                message: 'DB ERROR',
-                error: err.message,
-                code: err.code
-            });
+            return res.status(500).json({ error: err.message });
         }
         res.json({ success: true, result: rows[0].result });
     });
 });
-
 
 // ==================== DEFAULT PAGE ====================
 app.get('/', (req, res) => {
