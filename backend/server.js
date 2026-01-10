@@ -34,29 +34,30 @@ app.get('/test-db', (req, res) => {
 app.post('/admin/login', (req, res) => {
     const { name, sandi } = req.body;
 
-    // Query ke table admin di database
-    const sql = 'SELECT * FROM admin WHERE name = ? AND password = ?';
-    db.query(sql, [name, sandi], (err, rows) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Terjadi kesalahan server' });
-        }
+    // Query ke tabel admin sesuai nama kolom di DB
+    db.query(
+        'SELECT * FROM admin WHERE name = ? AND sandi = ?',
+        [name, sandi],
+        (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Terjadi kesalahan di server' });
+            }
 
-        if (rows.length > 0) {
-            // Login berhasil
-            const adminData = rows[0];
-            const token = 'admin-token-123'; // Bisa diganti JWT jika mau
-
-            return res.json({
-                success: true,
-                admin: { id: adminData.id, name: adminData.name },
-                token
-            });
-        } else {
-            // Login gagal
-            return res.status(401).json({ error: 'Nama atau password salah' });
+            if (results.length > 0) {
+                const admin = results[0];
+                // Contoh token sederhana
+                const token = 'admin-token-123';
+                return res.json({
+                    success: true,
+                    admin: { id: admin.id, name: admin.name },
+                    token
+                });
+            } else {
+                return res.status(401).json({ error: 'Nama atau password salah' });
+            }
         }
-    });
+    );
 });
 
 
@@ -129,6 +130,7 @@ app.get('/', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
 
 
