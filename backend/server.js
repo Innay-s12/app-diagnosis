@@ -35,9 +35,12 @@ app.post('/admin/login', (req, res) => {
     const { name, sandi } = req.body;
 
     if (name === 'admin' && sandi === '123456') {
+        // Contoh token sederhana (bisa diganti JWT)
+        const token = 'admin-token-123';
         return res.json({
             success: true,
-            admin: { id: 1, name: 'admin' }
+            admin: { id: 1, name: 'admin' },
+            token
         });
     }
 
@@ -114,4 +117,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on port ${PORT}`);
 });
+
 
