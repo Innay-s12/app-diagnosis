@@ -7,6 +7,10 @@ const db = require('./db'); // koneksi database yang sudah berhasil
 app.use(cors());
 app.use(express.json());
 
+// Healthcheck endpoint Railway
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+});
 // =====================
 // Endpoint test DB
 // =====================
@@ -103,3 +107,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
+
