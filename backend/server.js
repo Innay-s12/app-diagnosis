@@ -1,110 +1,107 @@
 // server.js
 const express = require('express');
-const app = express();
+const path = require('path');
 const cors = require('cors');
-const db = require('./db'); // koneksi database yang sudah berhasil
+const db = require('./db');
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+/* ================= MIDDLEWARE ================= */
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Healthcheck endpoint Railway
+/* ================= STATIC FRONTEND ================= */
+const frontendPath = path.join(__dirname, '../frontend');
+app.use(express.static(frontendPath));
+
+/* ================= HEALTH ================= */
 app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'Server is healthy' });
+  res.status(200).send('OK');
 });
 
-// =====================
-// Endpoint test DB
-// =====================
-app.get('/test-db', async (req, res) => {
-    try {
-        await db.execute('SELECT 1'); // query sederhana untuk cek koneksi
-        res.json({ message: 'Database connection successful' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Database connection failed' });
+/* ================= DB TEST ================= */
+app.get('/test-db', (req, res) => {
+  db.query('SELECT 1 + 1 AS result', (err, rows) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: err.message });
     }
+    res.json({ success: true, result: rows[0].result });
+  });
 });
 
-// =====================
-// Endpoint Users
-// =====================
-app.get('/users', async (req, res) => {
-    try {
-        // tabelmu bernama 'name'
-        const [users] = await db.execute('SELECT * FROM name'); 
-        res.json(users);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Gagal mengambil data pengguna' });
+/* ================= ADMIN LOGIN ================= */
+app.post('/admin/login', (req, res) => {
+  const { name, sandi } = req.body;
+  if (name === 'admin' && sandi === '123456') {
+    return res.json({ success: true, admin: { id: 1, name: 'admin' } });
+  }
+  res.status(401).json({ error: 'Login gagal' });
+});
+
+/* ================= USERS ================= */
+app.post('/users', (req, res) => {
+  const { nama_lengkap, usia, jenis_kelamin } = req.body;
+  db.query(
+    'INSERT INTO users (nama_lengkap, usia, jenis_kelamin) VALUES (?, ?, ?)',
+    [nama_lengkap, usia, jenis_kelamin],
+    (err, result) => {
+      if (err) return res.status(500).json(err);
+      res.json({ id: result.insertId });
     }
+  );
 });
 
-// =====================
-// Endpoint Diagnoses
-// =====================
-app.get('/diagnoses', async (req, res) => {
-    try {
-        // tabel diagnosis sesuai struktur yang ada
-        const [diagnoses] = await db.execute('SELECT * FROM diagnosis'); 
-        res.json(diagnoses);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Gagal mengambil data diagnosa' });
+/* ================= SYMPTOMS ================= */
+app.get('/symptoms', (req, res) => {
+  db.query('SELECT * FROM symptoms ORDER BY id', (err, rows) => {
+    if (err) return res.status(500).json(err);
+    res.json(rows);
+  });
+});
+
+/* ================= USER SYMPTOMS ================= */
+app.post('/user-symptoms', (req, res) => {
+  const { user_id, symptom_id } = req.body;
+  db.query(
+    'INSERT INTO user_symptoms (user_id, symptom_id) VALUES (?, ?)',
+    [user_id, symptom_id],
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ success: true });
     }
+  );
 });
 
-// =====================
-// Endpoint Recommendations
-// =====================
-app.get('/recommendations', async (req, res) => {
-    try {
-        const [recs] = await db.execute('SELECT * FROM recommendations'); 
-        res.json(recs);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Gagal mengambil data rekomendasi' });
+/* ================= DIAGNOSES ================= */
+app.post('/diagnoses', (req, res) => {
+  const { user_id, tingkat_risiko, skor_akhir, rekomendasi_khusus } = req.body;
+  db.query(
+    'INSERT INTO diagnoses (user_id, tingkat_risiko, skor_akhir, rekomendasi_khusus) VALUES (?, ?, ?, ?)',
+    [user_id, tingkat_risiko, skor_akhir, rekomendasi_khusus],
+    (err) => {
+      if (err) return res.status(500).json(err);
+      res.json({ success: true });
     }
+  );
 });
 
-// =====================
-// Endpoint Symptoms
-// =====================
-app.get('/symptoms', async (req, res) => {
-    try {
-        const [symptoms] = await db.execute('SELECT * FROM symptoms'); 
-        res.json(symptoms);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Gagal mengambil data gejala' });
-    }
+/* ================= RECOMMENDATIONS ================= */
+app.get('/recommendations', (req, res) => {
+  db.query('SELECT * FROM recommendations ORDER BY kategori', (err, rows) => {
+    if (err) return res.status(500).json(err);
+    res.json(rows);
+  });
 });
 
-// =====================
-// Optional Stats Endpoint
-// =====================
-app.get('/stats', async (req, res) => {
-    try {
-        const [[totalUsers]] = await db.execute('SELECT COUNT(*) AS total_users FROM name');
-        const [[totalDiagnoses]] = await db.execute('SELECT COUNT(*) AS total_diagnoses FROM diagnosis');
-        const [[totalRecommendations]] = await db.execute('SELECT COUNT(*) AS total_recommendations FROM recommendations');
-        const [[totalSymptoms]] = await db.execute('SELECT COUNT(*) AS total_symptoms FROM symptoms');
-
-        res.json({
-            total_users: totalUsers.total_users,
-            total_diagnoses: totalDiagnoses.total_diagnoses,
-            total_recommendations: totalRecommendations.total_recommendations,
-            total_symptoms: totalSymptoms.total_symptoms
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Gagal mengambil data statistik' });
-    }
+/* ================= DEFAULT PAGE ================= */
+app.get('/', (req, res) => {
+  res.sendFile(path.join(frontendPath, 'index.html'));
 });
 
-// =====================
-// Jalankan server
-// =====================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+/* ================= START SERVER ================= */
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
